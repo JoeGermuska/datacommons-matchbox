@@ -1,6 +1,6 @@
 import unittest
 import datetime
-from api import Client
+from api import LocalClient
 
 TEST_DB = 'testdb'
 
@@ -14,16 +14,16 @@ class TestClient(unittest.TestCase):
 
     def setUp(self):
         self.default_source = 'test'
-        self.client = Client(TEST_DB, default_source=self.default_source)
+        self.client = LocalClient(TEST_DB, default_source=self.default_source)
         self._clear_db()
 
     def test_add_ids(self):
         doc = {}
-        Client._add_ids(doc)
+        LocalClient._add_ids(doc)
         self.assert_('_id' in doc)
         self.assert_('_suid' in doc)
         newdoc = dict(doc)
-        Client._add_ids(doc)
+        LocalClient._add_ids(doc)
         self.assertEqual(doc, newdoc)
 
     def test_insert_noname(self):

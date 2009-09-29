@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 from pymongo.connection import Connection
 
-class Client(object):
+class LocalClient(object):
     '''
         Client for interfacing with the matchbox data store.
     '''
