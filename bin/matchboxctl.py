@@ -83,7 +83,7 @@ def main():
                       help='set path to mongo database [./data/mongo]')
     parser.add_option('--nomongo', action='store_false', dest='mongo',
                       help='do not start mongo instance')
-    parser.add_option('--sphinx', dest='sphinx', default='sphinx.conf',
+    parser.add_option('--sphinx', dest='sphinx', default='etc/sphinx.conf',
                       metavar='SPHINX_CONF',
                       help='set path to sphinx.conf [./sphinx.conf]')
     parser.add_option('--nosphinx', action='store_false', dest='sphinx',
