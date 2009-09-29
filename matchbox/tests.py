@@ -49,7 +49,7 @@ class TestClient(unittest.TestCase):
         item = self.client.get(key)
         self.assertEqual(item['makes'], 'sprockets')
 
-    def do_simple_merge(self):
+    def test_make_merge_simple(self):
         self._clear_db()
         docs = [{'name': 'Spacely Space Sprockets', 'some_id': 'ABCD1', '_count':3},
                 {'name': 'Spacely Sprockets', 'makes':'sprockets', '_count':4},
@@ -57,11 +57,9 @@ class TestClient(unittest.TestCase):
         ids = []
         for doc in docs:
             ids.append(self.client.insert(doc))
-        return self.client.make_merge(docs[0]['name'], ids)
+        result = self.client.make_merge(docs[0]['name'], ids)
 
-    def test_make_merge_simple(self):
-        result = self.do_simple_merge()
-        self.assertEqual(result['name'], docs[0]['name'])
+        self.assertEqual(result['name'], 'Spacely Space Sprockets')
         self.assertEqual(result['aliases'], [u"Spacely's Sprockets", u'Spacely Sprockets'])
         self.assertEqual(result['_count'], 7)
         self.assertEqual(result['_merged_from'], ids)
@@ -69,10 +67,24 @@ class TestClient(unittest.TestCase):
         self.assertEqual(len(result['_id']), 32)
 
     def test_commit_merge_simple(self):
-        merge = self.do_simple_merge()
+        self._clear_db()
+        docs = [{'name': 'Spacely Space Sprockets', 'some_id': 'ABCD1', '_count':3},
+                {'name': 'Spacely Sprockets', 'makes':'sprockets', '_count':4},
+                {'name': "Spacely's Sprockets", 'some_id':'X100'}]
+        ids = []
+        for doc in docs:
+            ids.append(self.client.insert(doc))
+        merge = self.client.make_merge(docs[0]['name'], ids)
         self.client.commit_merge(merge)
 
-# TODO: test commit, search, save, get
+        # get resulting contents of both stores
+        entities = list(self.client._entity_col.find())
+        merged = list(self.client._merged_col.find())
+        self.assertEqual(len(entities), 1)
+        self.assertEqual(entities[0]['_id'], merge['_id'])
+        self.assertEqual(len(merged), 3)
+
+# TODO: search, save, get
 
 if __name__ == '__main__':
     unittest.main()

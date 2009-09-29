@@ -110,4 +110,9 @@ class Client(object):
         return result
 
     def commit_merge(self, merge_record):
-        self._entity_col.insert(result)
+        to_remove = merge_record['_merged_from']
+        spec = {'_id':{'$in':to_remove}}
+        old_recs = list(self._entity_col.find(spec))
+        self.insert(merge_record)
+        self._entity_col.remove(spec)
+        self._merged_col.insert(old_recs)
