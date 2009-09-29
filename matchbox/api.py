@@ -28,11 +28,6 @@ class Client(object):
         if '_suid' not in doc:
             doc['_suid'] = str(uuid.UUID(doc['_id']).int >> 64)
 
-    @staticmethod
-    def _add_suid(doc):
-        if '_suid' not in doc:
-            doc['_suid'] = str(uuid.UUID(doc['_id']).int >> 64)
-
     def insert(self, data):
         if 'name' not in data:
             raise TypeError('missing required parameter "name"')
@@ -57,9 +52,8 @@ class Client(object):
         return self._entity_col.find(kwargs)
 
     def save(self, doc):
-        if '_id' not in doc:
+        if '_id' not in doc or '_suid' not in doc:
             raise ValueError('document does not have an id, try insert first')
-        self._add_suid(doc)
         return self._entity_col.save(doc)
 
     def make_merge(self, name, ids, source=None, _type=None):
