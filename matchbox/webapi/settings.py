@@ -1,0 +1,8 @@
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+TEMPLATE_LOADERS = ()
+MIDDLEWARE_CLASSES = ()
+ROOT_URLCONF = 'urls'
+INSTALLED_APPS = (
+    'matchbox.webapi'
+)
