@@ -75,33 +75,30 @@ class LocalClient(object):
             kwargs['_id'] = uid
         return self._entity_col.find_one(kwargs)
 
-    def search(self, **kwargs):
+    def search(self, name=None, **kwargs):
         '''
-            Find all entities matching attributes specified in kwargs.
+            Find all entities matching attributes specified in kwargs. Specifying the
+            name parameter will do a fuzzy match on the document name attribute.
 
             Returns an iterator over all results, search() will return all
             data in the datastore.
         '''
-        return self._entity_col.find(kwargs)
-    
-    def name_search(self, query):
-        
-        # load sphinx client
-        sphinx = SphinxClient()
-        sphinx.SetLimits(0, 50)
-        sphinx.SetIndexWeights({'entities': 1000, 'entities_metaphone': 100, 'entities_soundex': 100})
-        sphinx.SetFieldWeights({'entity': 1000, 'aliases': 100})
-        sphinx.SetSortMode(SPH_SORT_RELEVANCE)
-        
-        # do search and retrieve documents
-        docs = []
-        res = sphinx.Query(query)
-        if res:
-            for m in res['matches']:
-                doc = self.get(**{'_suid': str(m['id'])})
-                if doc:
-                    docs.append(doc)
-        return docs
+        if name:
+            
+            # load sphinx client
+            sphinx = SphinxClient()
+            sphinx.SetLimits(0, 50)
+            sphinx.SetIndexWeights({'entities': 1000, 'entities_metaphone': 100, 'entities_soundex': 100})
+            sphinx.SetFieldWeights({'entity': 1000, 'aliases': 100})
+            sphinx.SetSortMode(SPH_SORT_RELEVANCE)
+
+            # do search and retrieve document suids
+            res = sphinx.Query(name)
+            if res:
+                doc_ids = [str(m['id']) for m in res['matches']]
+                kwargs['_suid'] = {'$in': doc_ids}
+                
+        return self._entity_col.find(kwargs)        
 
     def save(self, doc):
         if '_id' not in doc or '_suid' not in doc:
