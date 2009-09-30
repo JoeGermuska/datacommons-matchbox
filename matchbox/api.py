@@ -84,7 +84,6 @@ class LocalClient(object):
             data in the datastore.
         '''
         if name:
-            
             # load sphinx client
             sphinx = SphinxClient()
             sphinx.SetLimits(0, 50)
@@ -97,8 +96,8 @@ class LocalClient(object):
             if res:
                 doc_ids = [str(m['id']) for m in res['matches']]
                 kwargs['_suid'] = {'$in': doc_ids}
-                
-        return self._entity_col.find(kwargs)        
+
+        return self._entity_col.find(kwargs)
 
     def save(self, doc):
         if '_id' not in doc or '_suid' not in doc:
@@ -119,7 +118,6 @@ class LocalClient(object):
         '''
         # initialize a merge result
         result = {'name': name, '_merged_from': ids, '_count': 0}
-        self._add_ids(result)
         if source:
             result['_source'] = source
 
@@ -179,6 +177,7 @@ class LocalClient(object):
         to_remove = merge_record['_merged_from']
         spec = {'_id':{'$in':to_remove}}
         old_recs = list(self._entity_col.find(spec))
-        self.insert(merge_record)
+        new_id = self.insert(merge_record)
         self._entity_col.remove(spec)
         self._merged_col.insert(old_recs)
+        return new_id
