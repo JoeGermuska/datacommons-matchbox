@@ -1,5 +1,5 @@
 '''
-    python matchbox data store
+    Clients for interacting with the data store either locally or via HTTP.
 '''
 
 from datetime import datetime
@@ -8,7 +8,16 @@ from pymongo.connection import Connection
 
 class LocalClient(object):
     '''
-        Client for interfacing with the matchbox data store.
+        Client for interfacing with a local instance of the data store.
+
+        ``dbname``
+            database name (required)
+        ``host``
+            host where mongodb is running (default: localhost)
+        ``mongo_port``
+            port where mongodb is running (default: 27017)
+        ``default_source``
+            source to set on records inserted without a `_source` attribute
     '''
 
     def __init__(self, dbname, host='localhost', mongo_port=27017,
@@ -29,6 +38,13 @@ class LocalClient(object):
             doc['_suid'] = str(uuid.UUID(doc['_id']).int >> 64)
 
     def insert(self, data):
+        '''
+            Insert a new entity into the data store.
+
+            The only required attribute of the document at insert time is
+            ``name``.  ``_id``, ``_suid``, ``_timestamp``, and ``_source`` will
+            be added if not already present.
+        '''
         if 'name' not in data:
             raise TypeError('missing required parameter "name"')
         if '_timestamp' not in data:
@@ -39,16 +55,32 @@ class LocalClient(object):
         return self._entity_col.insert(data)
 
     def update(self, uid, **kwargs):
+        '''
+            Update the entity with an id ``uid``.
+
+            Given any number of additional kwargs, the entity referred to by
+            ``uid`` will have the attributes specified in ``kwargs`` added or
+            replaced.
+        '''
         doc = self.get(uid)
         doc.update(kwargs)
         return self.save(doc)
 
     def get(self, uid, **kwargs):
+        '''
+            Get the entity referred to by ``uid``. (Returns None if not found)
+        '''
         if uid:
             kwargs['_id'] = uid
         return self._entity_col.find_one(kwargs)
 
     def search(self, **kwargs):
+        '''
+            Find all entities matching attributes specified in kwargs.
+
+            Returns an iterator over all results, search() will return all
+            data in the datastore.
+        '''
         return self._entity_col.find(kwargs)
 
     def save(self, doc):
@@ -57,6 +89,17 @@ class LocalClient(object):
         return self._entity_col.save(doc)
 
     def make_merge(self, name, ids, source=None, _type=None):
+        '''
+            Build a merge record without saving any changes to the database.
+
+            This method builds a new entity record that represents the merge of
+            all of the ids specified in ``ids``.  It is necessary to provide a
+            ``name`` for the new record, ``source`` and ``_type`` can also be
+            provided to override the defaults.
+
+            See ``commit_merge`` for information on saving the created merge
+            record to the database.
+        '''
         # initialize a merge result
         result = {'name': name, '_merged_from': ids, '_count': 0}
         self._add_ids(result)
@@ -110,6 +153,12 @@ class LocalClient(object):
         return result
 
     def commit_merge(self, merge_record):
+        '''
+            Save a merge record created by ``make_merge`` to the database.
+
+            Given a record created by ``make_merge`` insert the new record and
+            move all merged data into the merged record collection.
+        '''
         to_remove = merge_record['_merged_from']
         spec = {'_id':{'$in':to_remove}}
         old_recs = list(self._entity_col.find(spec))
