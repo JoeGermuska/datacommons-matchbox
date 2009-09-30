@@ -47,3 +47,8 @@ Installation of Sphinx Search
 Installation of project
 =======================
 
+Create the following directories:
+
+#. data/mongo
+#. data/sphinx
+#. log
