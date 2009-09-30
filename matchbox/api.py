@@ -5,6 +5,7 @@
 from datetime import datetime
 import uuid
 from pymongo.connection import Connection
+from sphinxapi import *
 
 class LocalClient(object):
     '''
@@ -43,13 +44,32 @@ class LocalClient(object):
         doc.update(kwargs)
         return self.save(doc)
 
-    def get(self, uid, **kwargs):
+    def get(self, uid=None, **kwargs):
         if uid:
             kwargs['_id'] = uid
         return self._entity_col.find_one(kwargs)
 
     def search(self, **kwargs):
         return self._entity_col.find(kwargs)
+    
+    def name_search(self, query):
+        
+        # load sphinx client
+        sphinx = SphinxClient()
+        sphinx.SetLimits(0, 50)
+        sphinx.SetIndexWeights({'entities': 1000, 'entities_metaphone': 100, 'entities_soundex': 100})
+        sphinx.SetFieldWeights({'entity': 1000, 'aliases': 100})
+        sphinx.SetSortMode(SPH_SORT_RELEVANCE)
+        
+        # do search and retrieve documents
+        docs = []
+        res = sphinx.Query(query)
+        if res:
+            for m in res['matches']:
+                doc = self.get(**{'_suid': str(m['id'])})
+                if doc:
+                    docs.append(doc)
+        return docs
 
     def save(self, doc):
         if '_id' not in doc or '_suid' not in doc:

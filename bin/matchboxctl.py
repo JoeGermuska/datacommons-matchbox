@@ -30,7 +30,7 @@ def check_pidfile(fname):
     else:
         return None
 
-def controlled_launch(args, progname, logdir):
+def controlled_launch(args, progname, logdir, wait=False):
     if check_pidfile(progname+'.pid'):
         print progname, 'is already running'
     else:
@@ -39,6 +39,8 @@ def controlled_launch(args, progname, logdir):
         proc = subprocess.Popen(args, stdout=out, stderr=err)
         print progname, 'started with pid', proc.pid
         open(progname+'.pid', 'w').write(str(proc.pid))
+        if wait:
+            proc.wait()
 
 def kill_pidfile(pidfile):
     pid = check_pidfile(pidfile)
@@ -76,6 +78,13 @@ def status(options):
     else:
         print 'sphinx is not running'
 
+def reindex(options):
+    args = ['indexer', '--config', options.sphinx, '--all']
+    if options.rotate:
+        args.append('--rotate')
+    controlled_launch(args, 'indexer', options.logdir, wait=True)
+    kill_pidfile('indexer.pid')
+
 def main():
     parser = OptionParser()
     parser.add_option('--mongo', dest='mongo', default='data/mongo', 
@@ -88,6 +97,8 @@ def main():
                       help='set path to sphinx.conf [./sphinx.conf]')
     parser.add_option('--nosphinx', action='store_false', dest='sphinx',
                       help='do not start sphinx instance')
+    parser.add_option('--rotate', dest='rotate', action='store_true',
+                      help='rotate sphinx indexes on running instance (only used with reindex)')
     parser.add_option('--logdir', dest='logdir', default='log',
                       help='set log directory [./log/]')
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
@@ -104,9 +115,11 @@ def main():
         start(options)
     elif cmd == 'status':
         status(options)
+    elif cmd == 'reindex':
+        reindex(options)
 
     else:
-        print 'Usage: ./script start|stop|restart|status [args]'
+        print 'Usage: ./script start|stop|restart|status|reindex [args]'
 
 
 if __name__ == '__main__':
